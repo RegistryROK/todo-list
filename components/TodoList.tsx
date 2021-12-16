@@ -1,9 +1,107 @@
-import { FC, useCallback, useMemo } from 'react';
+import { FC, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import palette from '../styles/palette';
-import { TodoType } from '../types/todo';
 import TrashCanIcon from '../public/statics/svg/trash_can.svg';
 import CheckMarkIcon from '../public/statics/svg/check_mark.svg';
+import { checkTodoAPI, deleteTodoAPI } from '../lib/api/todo';
+
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../reducers';
+import { todoActions } from '../reducers/todo';
+
+const TodoList: FC = () => {
+  type ObjectIndexType = {
+    [key: string]: number | undefined;
+  };
+  const todos = useSelector((state: RootState) => state.todo.todos);
+  const dispatch = useDispatch();
+  const todoColorNums = useMemo(() => {
+    const colors: ObjectIndexType = {};
+    todos.forEach((todo) => {
+      const value = colors[todo.color];
+      if (!value) {
+        colors[`${todo.color}`] = 1;
+      } else {
+        colors[`${todo.color}`] = value + 1;
+      }
+    });
+    return colors;
+  }, [todos]);
+  const checkTodo = async (id: number) => {
+    try {
+      await checkTodoAPI(id);
+      console.log('Checked!');
+      const newTodos = todos.map((todo) => {
+        if (todo.id === id) {
+          return { ...todo, checked: !todo.checked };
+        }
+        return todo;
+      });
+      dispatch(todoActions.setTodo(newTodos));
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  const deleteTodo = async (id: number) => {
+    try {
+      await deleteTodoAPI(id);
+      const newTodos = todos.filter((todo) => todo.id !== id);
+      dispatch(todoActions.setTodo(newTodos));
+      console.log('Deleted.');
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  return (
+    <Container>
+      <div className='todo-list-header'>
+        <p className='todo-list-last-todo'>
+          남은 Todo<span>{todos.length}개</span>
+        </p>
+        <div className='todo-list-header-colors'>
+          {Object.keys(todoColorNums).map((color, index) => (
+            <div className='todo-list-header-color-num' key={index}>
+              <div className={`todo-list-header-round-color bg-${color}`} />
+              <p>{todoColorNums[color]}개</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <ul className='todo-list'>
+        {todos.map((todo) => (
+          <li className='todo-item' key={todo.id}>
+            <div className='todo-left-side'>
+              <div className={`todo-color-block bg-${todo.color}`} />
+              <p className={`todo-text ${todo.checked ? 'checked-todo-text' : ''}`}>{todo.text}</p>
+            </div>
+            <div className='todo-right-side'>
+              {todo.checked && (
+                <>
+                  <TrashCanIcon className='todo-trash-can' onClick={() => deleteTodo(todo.id)} />
+                  <CheckMarkIcon
+                    className='todo-check-mark'
+                    onClick={() => {
+                      checkTodo(todo.id);
+                    }}
+                  />
+                </>
+              )}
+              {!todo.checked && (
+                <button
+                  type='button'
+                  className='todo-button'
+                  onClick={() => {
+                    checkTodo(todo.id);
+                  }}
+                />
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Container>
+  );
+};
 
 const Container = styled.div`
   width: 100%;
@@ -112,65 +210,5 @@ const Container = styled.div`
     background-color: ${palette.yellow};
   }
 `;
-
-interface IProps {
-  todos: TodoType[];
-}
-
-const TodoList: FC<IProps> = ({ todos }) => {
-  type ObjectIndexType = {
-    [key: string]: number | undefined;
-  };
-
-  const todoColorNums = useMemo(() => {
-    const colors: ObjectIndexType = {};
-    todos.forEach((todo) => {
-      const value = colors[todo.color];
-      if (!value) {
-        colors[`${todo.color}`] = 1;
-      } else {
-        colors[`${todo.color}`] = value + 1;
-      }
-    });
-    return colors;
-  }, [todos]);
-
-  return (
-    <Container>
-      <div className='todo-list-header'>
-        <p className='todo-list-last-todo'>
-          남은 Todo<span>{todos.length}개</span>
-        </p>
-        <div className='todo-list-header-colors'>
-          {Object.keys(todoColorNums).map((color, index) => (
-            <div className='todo-list-header-color-num' key={index}>
-              <div className={`todo-list-header-round-color bg-${color}`} />
-              <p>{todoColorNums[color]}개</p>
-            </div>
-          ))}
-        </div>
-      </div>
-      <ul className='todo-list'>
-        {todos.map((todo) => (
-          <li className='todo-item' key={todo.id}>
-            <div className='todo-left-side'>
-              <div className={`todo-color-block bg-${todo.color}`} />
-              <p className={`todo-text ${todo.checked ? 'checked-todo-text' : ''}`}>{todo.text}</p>
-            </div>
-            <div className='todo-right-side'>
-              {todo.checked && (
-                <>
-                  <TrashCanIcon className='todo-trash-can' onClick={() => {}} />
-                  <CheckMarkIcon className='todo-check-mark' onClick={() => {}} />
-                </>
-              )}
-              {!todo.checked && <button type='button' className='todo-button' onClick={() => {}} />}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </Container>
-  );
-};
 
 export default TodoList;
