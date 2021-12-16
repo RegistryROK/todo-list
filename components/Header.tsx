@@ -2,6 +2,14 @@ import { FC } from 'react';
 import styled from 'styled-components';
 import palette from '../styles/palette';
 
+const Header: FC = () => {
+  return (
+    <Container>
+      <h1>Registry's TodoList</h1>
+    </Container>
+  );
+};
+
 const Container = styled.div`
   display: flex;
   align-items: center;
@@ -13,13 +21,5 @@ const Container = styled.div`
     font-size: 21px;
   }
 `;
-
-const Header: FC = () => {
-  return (
-    <Container>
-      <h1>Registry's TodoList</h1>
-    </Container>
-  );
-};
 
 export default Header;
